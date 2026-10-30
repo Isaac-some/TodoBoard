@@ -19,7 +19,8 @@ jobs:
       - run: ./scripts/build-app.sh
       - run: bash scripts/package-runtime.sh
       - run: python scripts/check-publication.py --artifacts
-      - run: shasum -a 256 dist/TodoBoard.zip dist/TodoBoard-runtime.tar.gz > dist/SHA256SUMS
+      - run: shasum -a 256 TodoBoard.zip TodoBoard-runtime.tar.gz > SHA256SUMS
+        working-directory: dist
       - env:
           GH_TOKEN: ${{ github.token }}
         run: |
