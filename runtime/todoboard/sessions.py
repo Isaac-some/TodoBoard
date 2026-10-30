@@ -39,7 +39,7 @@ def capture_session(p,event,publish=True,memory_types=None):
     receipt=state['receipt']
     if receipt.get('task_id'):
         task_key='memory-task:'+receipt['task_id']
-        if not p.ledger.get(task_key):p.ledger.put(task_key,{'taskID':receipt['task_id'],'sessionID':sid,'archiveURI':receipt['archive_uri'],'state':'pending'})
+        if not p.ledger.get(task_key):p.ledger.put(task_key,{'taskID':receipt['task_id'],'sessionID':sid,'archiveURI':receipt['archive_uri'],'sourceURI':event.get('sourceURI'),'cardID':event.get('cardID'),'state':'pending'})
     if publish:atomic_json(p.root/'inbox'/f'commit-{key}.json',{'version':1,'id':'commit-'+key,'kind':'ov-commit','receipt':receipt,'title':'Codex session'})
     p.ledger.put(seen_key,list(dict.fromkeys(seen+fingerprints)))
     p.ledger.put('session:'+event['sessionID'],len(event['messages']))
@@ -52,7 +52,7 @@ def poll_commit_tasks(p):
         try:
             result=p.ov.request('GET','/api/v1/tasks/'+value['taskID'])
             details=result.get('result') or {}
-            value.update(state=result['status'],stage=result.get('stage'),error=result.get('error'),memoriesExtracted=details.get('memories_extracted'),skipReason=details.get('agent_memory_skip_reason'))
+            value.update(state=result['status'],stage=result.get('stage'),error=result.get('error'),memoriesExtracted=details.get('memories_extracted'),skipReason=details.get('agent_memory_skip_reason'),memoryDiffURI=details.get('memory_diff_uri'))
             p.ledger.put(row['id'],value)
         except Exception:pass
 

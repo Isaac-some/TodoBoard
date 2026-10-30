@@ -67,7 +67,7 @@ class Pipeline:
         if 'sessions' in getattr(self.ov,'capabilities',set()):
             from .sessions import capture_session
             identity=stable_id('accepted',task['id'],task['doneAt'])
-            capture_session(self,{'id':identity,'sessionID':identity,'messages':[{'role':'user','content':'The user manually accepted this task in TodoBoard. Preserve only reusable experience supported by the evidence. Source: '+uri+'\n'+body},{'role':'assistant','content':task['execution']['summary']}]},publish=False,memory_types=['cases','trajectories','experiences'])
+            capture_session(self,{'id':identity,'sessionID':identity,'sourceURI':uri,'cardID':task['id'],'messages':[{'role':'user','content':'The user manually accepted this task in TodoBoard. Preserve only reusable experience supported by the evidence. Source: '+uri+'\n'+body},{'role':'assistant','content':task['execution']['summary']}]},publish=False,memory_types=['cases','trajectories','experiences'])
     def run(self):
         self.accepted_results()
         for job in self.ledger.pending():
