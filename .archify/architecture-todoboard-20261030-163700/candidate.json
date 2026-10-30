@@ -1,0 +1,349 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "TodoBoard 完整工作链路",
+    "locale": "zh-CN",
+    "output": "docs/public/architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/Isaac-some/TodoBoard.git",
+      "revision": "299ee11b17c187f52c666835ab985401bd6f838d"
+    }
+  },
+  "components": [
+    {
+      "id": "board",
+      "type": "frontend",
+      "label": "TodoBoard · 人工决策",
+      "sublabel": "唯一界面 · 接纳／分发／完成",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        250,
+        88
+      ],
+      "sources": [
+        {
+          "path": "Sources/BoardKit/BoardStore.swift",
+          "line": 96,
+          "end_line": 125
+        },
+        {
+          "path": "Sources/BoardUI/RuntimeHandoffClient.swift",
+          "line": 15,
+          "end_line": 40
+        }
+      ]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "独立后台",
+      "sublabel": "归档 · 候选 · 检索 · 投递 · 回传",
+      "pos": [
+        500,
+        280
+      ],
+      "size": [
+        320,
+        100
+      ],
+      "sources": [
+        {
+          "path": "runtime/todoboard/pipeline.py",
+          "line": 15,
+          "end_line": 53
+        },
+        {
+          "path": "runtime/todoboard/delivery.py",
+          "line": 8,
+          "end_line": 70
+        },
+        {
+          "path": "runtime/todoboard/worker.py",
+          "line": 12,
+          "end_line": 51
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "type": "external",
+      "label": "Agent 原生 harness",
+      "sublabel": "Codex CLI／GUI · 扩展适配器",
+      "pos": [
+        1000,
+        40
+      ],
+      "size": [
+        270,
+        88
+      ],
+      "sources": [
+        {
+          "path": "runtime/todoboard/adapters.py",
+          "line": 9,
+          "end_line": 61
+        },
+        {
+          "path": "runtime/todoboard/delivery.py",
+          "line": 59,
+          "end_line": 79
+        }
+      ]
+    },
+    {
+      "id": "cards",
+      "type": "database",
+      "label": "tasks.json",
+      "sublabel": "唯一卡片数据源 · 共用文件锁",
+      "pos": [
+        40,
+        280
+      ],
+      "size": [
+        250,
+        88
+      ],
+      "sources": [
+        {
+          "path": "runtime/todoboard/store.py",
+          "line": 20,
+          "end_line": 52
+        },
+        {
+          "path": "Sources/BoardKit/BoardStore.swift",
+          "line": 185,
+          "end_line": 247
+        }
+      ]
+    },
+    {
+      "id": "knowledge",
+      "type": "database",
+      "label": "官方 OV 0.5.2.1",
+      "sublabel": "原生资源／会话／记忆 · 可替换",
+      "pos": [
+        1000,
+        280
+      ],
+      "size": [
+        320,
+        88
+      ],
+      "sources": [
+        {
+          "path": "runtime/todoboard/ov.py",
+          "line": 25,
+          "end_line": 44
+        },
+        {
+          "path": "runtime/todoboard/knowledge.py",
+          "line": 19,
+          "end_line": 23
+        },
+        {
+          "path": "runtime/todoboard/pipeline.py",
+          "line": 55,
+          "end_line": 69
+        }
+      ]
+    },
+    {
+      "id": "retention",
+      "type": "database",
+      "label": "后台留存与台账",
+      "sublabel": "原文 · 进度 · 回执 · 执行轨迹",
+      "pos": [
+        1000,
+        520
+      ],
+      "size": [
+        270,
+        88
+      ],
+      "sources": [
+        {
+          "path": "runtime/todoboard/pipeline.py",
+          "line": 15,
+          "end_line": 24
+        },
+        {
+          "path": "runtime/todoboard/ledger.py",
+          "line": 4,
+          "end_line": 20
+        },
+        {
+          "path": "runtime/todoboard/adapters.py",
+          "line": 11,
+          "end_line": 28
+        }
+      ]
+    },
+    {
+      "id": "sources",
+      "type": "external",
+      "label": "显式配置的工作资料",
+      "sublabel": "飞书会议 · Codex 会话 · 本地文字",
+      "pos": [
+        40,
+        520
+      ],
+      "size": [
+        310,
+        88
+      ],
+      "sources": [
+        {
+          "path": "runtime/todoboard/worker.py",
+          "line": 16,
+          "end_line": 46
+        },
+        {
+          "path": "runtime/todoboard/hook.py",
+          "line": 9,
+          "end_line": 32
+        }
+      ]
+    },
+    {
+      "id": "integration",
+      "type": "backend",
+      "label": "Hooks 与 MCP",
+      "sublabel": "同一配置 · 检索／续查／会话留存",
+      "pos": [
+        1450,
+        280
+      ],
+      "size": [
+        300,
+        88
+      ],
+      "sources": [
+        {
+          "path": "runtime/todoboard/recall.py",
+          "line": 7,
+          "end_line": 16
+        },
+        {
+          "path": "runtime/todoboard/mcp.py",
+          "line": 21,
+          "end_line": 35
+        },
+        {
+          "path": "runtime/todoboard/hook.py",
+          "line": 9,
+          "end_line": 32
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "board-worker",
+      "from": "board",
+      "to": "worker",
+      "label": "任务包",
+      "variant": "emphasis"
+    },
+    {
+      "id": "worker-agent",
+      "from": "worker",
+      "to": "agent",
+      "label": "按适配器分发",
+      "variant": "emphasis"
+    },
+    {
+      "id": "agent-result",
+      "from": "agent",
+      "to": "worker",
+      "label": "执行结果",
+      "variant": "default"
+    },
+    {
+      "id": "board-cards",
+      "from": "board",
+      "to": "cards",
+      "label": "人工改状态",
+      "variant": "default"
+    },
+    {
+      "id": "worker-cards",
+      "from": "worker",
+      "to": "cards",
+      "label": "候选／执行状态",
+      "variant": "default"
+    },
+    {
+      "id": "worker-knowledge",
+      "from": "worker",
+      "to": "knowledge",
+      "label": "归档／检索／验收后沉淀",
+      "variant": "default"
+    },
+    {
+      "id": "worker-retention",
+      "from": "worker",
+      "to": "retention",
+      "label": "原文／进度／轨迹",
+      "variant": "dashed"
+    },
+    {
+      "id": "sources-worker",
+      "from": "sources",
+      "to": "worker",
+      "label": "配置范围内采集",
+      "variant": "dashed"
+    },
+    {
+      "id": "agent-integration",
+      "from": "agent",
+      "to": "integration",
+      "label": "执行中按需取数",
+      "variant": "default"
+    },
+    {
+      "id": "integration-knowledge",
+      "from": "integration",
+      "to": "knowledge",
+      "label": "带来源的检索与读取",
+      "variant": "default"
+    },
+    {
+      "id": "integration-retention",
+      "from": "integration",
+      "to": "retention",
+      "label": "Stop Hook 写本地收件箱",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "人决定任务状态",
+      "items": [
+        "自动识别只追加候选；丢弃身份保留去重",
+        "执行结果独立于完成，用户回 Board 验收"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "后台连续运行",
+      "items": [
+        "退出 Board 后继续工作；失败保留资料与游标",
+        "实验接口不支持时明确失败，保留原请求"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "原版知识库",
+      "items": [
+        "官方 OV 0.5.2.1，无旧版私人补丁",
+        "服务、身份、检索位置和 Agent 均可配置"
+      ]
+    }
+  ]
+}

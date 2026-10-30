@@ -1,0 +1,329 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "TodoBoard 工作路线 · 从资料到经验",
+    "locale": "zh-CN",
+    "output": "docs/public/workflow.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/Isaac-some/TodoBoard.git",
+      "revision": "299ee11b17c187f52c666835ab985401bd6f838d"
+    }
+  },
+  "lanes": [
+    {
+      "id": "knowledge",
+      "label": "资料与记忆"
+    },
+    {
+      "id": "human",
+      "label": "Board 与人工"
+    },
+    {
+      "id": "execution",
+      "label": "后台与 Agent"
+    },
+    {
+      "id": "recovery",
+      "label": "保留与恢复",
+      "variant": "exception"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "material",
+      "lane": "knowledge",
+      "col": 0,
+      "type": "external",
+      "label": "工作资料",
+      "sublabel": "显式配置的来源",
+      "sources": [
+        {
+          "path": "runtime/todoboard/worker.py",
+          "line": 16,
+          "end_line": 31
+        }
+      ]
+    },
+    {
+      "id": "archive",
+      "lane": "knowledge",
+      "col": 1,
+      "type": "database",
+      "label": "OV 归档",
+      "sublabel": "成功并可读取",
+      "sources": [
+        {
+          "path": "runtime/todoboard/pipeline.py",
+          "line": 38,
+          "end_line": 53
+        },
+        {
+          "path": "runtime/todoboard/sessions.py",
+          "line": 60,
+          "end_line": 68
+        }
+      ]
+    },
+    {
+      "id": "candidate",
+      "lane": "human",
+      "col": 1,
+      "type": "frontend",
+      "label": "Todo 候选",
+      "sublabel": "证据与引用",
+      "sources": [
+        {
+          "path": "runtime/todoboard/pipeline.py",
+          "line": 45,
+          "end_line": 53
+        }
+      ]
+    },
+    {
+      "id": "accept",
+      "lane": "human",
+      "col": 2,
+      "type": "security",
+      "label": "人工接纳",
+      "sublabel": "拖入待办",
+      "sources": [
+        {
+          "path": "Sources/BoardKit/BoardStore.swift",
+          "line": 115,
+          "end_line": 125
+        },
+        {
+          "path": "runtime/todoboard/delivery.py",
+          "line": 48,
+          "end_line": 51
+        }
+      ]
+    },
+    {
+      "id": "dispatch",
+      "lane": "execution",
+      "col": 2,
+      "type": "backend",
+      "label": "补背景与分发",
+      "sublabel": "按适配器选择入口",
+      "sources": [
+        {
+          "path": "runtime/todoboard/delivery.py",
+          "line": 8,
+          "end_line": 23
+        },
+        {
+          "path": "runtime/todoboard/delivery.py",
+          "line": 39,
+          "end_line": 73
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "lane": "execution",
+      "col": 3,
+      "type": "external",
+      "label": "Agent 执行",
+      "sublabel": "原生对话与审批",
+      "sources": [
+        {
+          "path": "runtime/todoboard/adapters.py",
+          "line": 9,
+          "end_line": 61
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "lane": "human",
+      "col": 3,
+      "type": "frontend",
+      "label": "结果回到卡片",
+      "sublabel": "摘要与证据",
+      "sources": [
+        {
+          "path": "runtime/todoboard/delivery.py",
+          "line": 82,
+          "end_line": 96
+        },
+        {
+          "path": "Sources/BoardUI/TaskViews.swift",
+          "line": 88,
+          "end_line": 100
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "lane": "human",
+      "col": 4,
+      "type": "security",
+      "label": "人工完成",
+      "sublabel": "确认验收结果",
+      "sources": [
+        {
+          "path": "Sources/BoardKit/BoardStore.swift",
+          "line": 115,
+          "end_line": 125
+        }
+      ]
+    },
+    {
+      "id": "experience",
+      "lane": "knowledge",
+      "col": 4,
+      "type": "database",
+      "label": "经验沉淀",
+      "sublabel": "验收资源／按模型提炼经验",
+      "sources": [
+        {
+          "path": "runtime/todoboard/pipeline.py",
+          "line": 55,
+          "end_line": 70
+        },
+        {
+          "path": "runtime/todoboard/sessions.py",
+          "line": 45,
+          "end_line": 60
+        }
+      ]
+    },
+    {
+      "id": "retry",
+      "lane": "recovery",
+      "col": 3,
+      "type": "messagebus",
+      "label": "失败或需介入",
+      "sublabel": "保留任务与执行轨迹",
+      "sources": [
+        {
+          "path": "runtime/todoboard/delivery.py",
+          "line": 114,
+          "end_line": 120
+        },
+        {
+          "path": "runtime/todoboard/pipeline.py",
+          "line": 69,
+          "end_line": 81
+        },
+        {
+          "path": "Sources/BoardUI/AgentDelivery.swift",
+          "line": 50,
+          "end_line": 62
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "material-archive",
+      "from": "material",
+      "to": "archive",
+      "label": "后台归档",
+      "variant": "dashed"
+    },
+    {
+      "id": "archive-candidate",
+      "from": "archive",
+      "to": "candidate",
+      "label": "识别行动项",
+      "variant": "default"
+    },
+    {
+      "id": "candidate-accept",
+      "from": "candidate",
+      "to": "accept",
+      "label": "人工审核",
+      "variant": "security"
+    },
+    {
+      "id": "accept-dispatch",
+      "from": "accept",
+      "to": "dispatch",
+      "label": "接纳后分发",
+      "variant": "emphasis"
+    },
+    {
+      "id": "dispatch-agent",
+      "from": "dispatch",
+      "to": "agent",
+      "label": "任务与来源",
+      "variant": "emphasis"
+    },
+    {
+      "id": "agent-result",
+      "from": "agent",
+      "to": "result",
+      "label": "回传结果",
+      "variant": "default"
+    },
+    {
+      "id": "result-done",
+      "from": "result",
+      "to": "done",
+      "label": "人工验收",
+      "variant": "security"
+    },
+    {
+      "id": "done-experience",
+      "from": "done",
+      "to": "experience",
+      "label": "验收后写回",
+      "variant": "dashed"
+    },
+    {
+      "id": "agent-retry",
+      "from": "agent",
+      "to": "retry",
+      "label": "阻塞或失败",
+      "variant": "default"
+    },
+    {
+      "id": "retry-dispatch",
+      "from": "retry",
+      "to": "dispatch",
+      "label": "人工核对后重发",
+      "variant": "default"
+    }
+  ],
+  "mainPath": [
+    "material",
+    "archive",
+    "candidate",
+    "accept",
+    "dispatch",
+    "agent",
+    "result",
+    "done",
+    "experience"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "开发者复现路线",
+      "items": [
+        "空目录安装 App 与后台，先验证主动 Todo",
+        "配置官方 OV、来源、Hooks 与 MCP，再启用自动候选"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "完成闭环",
+      "items": [
+        "先验收 Codex CLI 和 GUI，再按协议扩展其他 Agent",
+        "资料失败保留队列；投递回执与完成分开"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "经验提取条件",
+      "items": [
+        "启用 OV 原生 Agent Evolution，并开放对应经验检索位置",
+        "异步状态独立跟踪；成功归档不等于一定产生经验"
+      ]
+    }
+  ]
+}
