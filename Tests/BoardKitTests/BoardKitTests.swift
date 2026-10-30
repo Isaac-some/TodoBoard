@@ -241,4 +241,26 @@ final class BoardKitTests: XCTestCase {
         XCTAssertEqual(store.board.tasks.count, 1)
         XCTAssertNil(store.banner)
     }
+    func testStaleUISavePreservesWorkerResultsAndUnknownFields() throws {
+        store.addTask(title: "Original", priority: .mid, status: .today)
+        var edited = store.board.tasks[0]
+        var raw = try JSONSerialization.jsonObject(with: Data(contentsOf: store.tasksFileURL)) as! [String: Any]
+        var tasks = raw["tasks"] as! [[String: Any]]
+        tasks[0]["execution"] = ["state": "result", "summary": "Background result", "evidence": ["synthetic evidence"], "updatedAt": ISO.isoNow()]
+        tasks[0]["providerExtension"] = "keep"
+        let another = BoardTask(title: "Worker candidate", status: .backlog)
+        tasks.append(try JSONSerialization.jsonObject(with: JSONEncoder().encode(another)) as! [String: Any])
+        raw["tasks"] = tasks; raw["rootExtension"] = true
+        try JSONSerialization.data(withJSONObject: raw).write(to: store.tasksFileURL, options: .atomic)
+        edited.notes = "UI edit while worker wrote"
+        store.updateTask(edited)
+        let persisted = try JSONSerialization.jsonObject(with: Data(contentsOf: store.tasksFileURL)) as! [String: Any]
+        let merged = persisted["tasks"] as! [[String: Any]]
+        XCTAssertEqual(merged.count, 2)
+        XCTAssertEqual(merged.first?["providerExtension"] as? String, "keep")
+        XCTAssertEqual((merged.first?["execution"] as? [String: Any])?["summary"] as? String, "Background result")
+        XCTAssertEqual(merged.first?["notes"] as? String, edited.notes)
+        XCTAssertEqual(persisted["rootExtension"] as? Bool, true)
+    }
+
 }

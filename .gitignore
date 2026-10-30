@@ -17,3 +17,6 @@ docs/.vitepress/dist/
 .runtime/
 .archify/**/review-*/
 .archify/**/*.finalize-summary.json
+
+docs/public/*.json
+.archify/**/candidate.before*.json

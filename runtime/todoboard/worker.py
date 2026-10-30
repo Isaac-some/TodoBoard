@@ -20,7 +20,8 @@ def tick(root):
                 if not file.is_file() or file.suffix.lower() not in {'.md','.txt','.srt','.json'} or file.is_symlink():continue
                 if not file.resolve().is_relative_to(path):continue
                 if file.stat().st_size>10_000_000:continue
-                p.submit(str(file),'local',file.name,file.read_text(encoding='utf-8'),source_uri=file.as_uri())
+                try:p.submit(str(file),'local',file.name,file.read_text(encoding='utf-8'),source_uri=file.as_uri())
+                except (OSError,UnicodeError,ValueError) as e:p.ledger.put('source-error:'+stable_id('file',str(file)),{'state':'retained','error':type(e).__name__})
         options=p.config['sources']['feishu'];now=datetime.now(timezone.utc)
         if options.get('enabled') and time.time()-p.ledger.get('feishu:lastAttempt',0)>=options.get('intervalMinutes',20)*60:
             p.ledger.put('feishu:lastAttempt',time.time())
@@ -56,11 +57,11 @@ def main(argv=None):
     root=initialize(a.data_dir)
     with (root/'worker.lock').open('a+') as lock:
         try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-        except BlockingIOError:return
+        except BlockingIOError:return False
         while True:
             try:tick(root);atomic_json(root/'worker-status.json',{'lastTick':datetime.now(timezone.utc).isoformat(),'state':'running'})
             except Exception as e:atomic_json(root/'worker-status.json',{'state':'error','error':str(e)})
-            if a.once:return
+            if a.once:return True
             from .config import load
             time.sleep(max(5,int(load(root).get('pollSeconds',60))))
 

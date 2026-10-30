@@ -4,11 +4,14 @@ import fcntl, json, os, tempfile
 from .models import Board, Task, Execution, now_iso, stable_id
 
 def atomic_json(path, value):
+    atomic_text(path,json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+
+def atomic_text(path, value):
     path=Path(path); path.parent.mkdir(parents=True,exist_ok=True)
     fd,tmp=tempfile.mkstemp(prefix='.pending-',dir=path.parent)
     try:
         with os.fdopen(fd,'w',encoding='utf-8') as out:
-            json.dump(value,out,ensure_ascii=False,indent=2); out.write('\n');out.flush();os.fsync(out.fileno())
+            out.write(value);out.flush();os.fsync(out.fileno())
         os.chmod(tmp,0o600);os.replace(tmp,path)
     finally: Path(tmp).unlink(missing_ok=True)
 

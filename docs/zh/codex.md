@@ -18,11 +18,19 @@ CLI 的非交互执行使用 Codex 自身的策略。需要交互审批或对话
 
 ## Hooks 与 MCP
 
-安装后台后，数据目录的 `integrations/codex/` 生成 `hooks.json`、`hook.sh` 与 `mcp.json` 模板，不会自动改全局配置。按[官方 Codex 插件文档](https://developers.openai.com/plugins/build/plugins)把 Hook 加入本地插件，通过 Codex 的正常信任流程启用。命令必须引用生成的 `hook.sh`，以保留数据目录与模块路径。
+安装后台后，数据目录的 `integrations/codex/` 生成完整本地插件、marketplace、`hooks.json` 与 `mcp.json`，执行脚本位于 `plugin/` 中，不会自动改全局配置。按下面命令添加，再通过 Codex 的正常信任流程审核并启用 Hooks。生成的命令已绑定本次数据目录与 Python 入口。
 
-在 `sources.codexWorkspaces` 显式列出允许留存对话的工作区。Stop Hook 只写本地收件箱，网络、归档与模型处理放在后台。Hook 不依赖关闭窗口，也不会把工具参数和结果复制成对话记忆。
+```bash
+cd ~/Projects/TodoBoard
+codex plugin marketplace add "$HOME/Library/Application Support/TodoBoard-OpenSource/integrations/codex"
+codex plugin add todoboard@todoboard-local
+```
 
-把生成的 MCP 设置加入自己的 Codex 配置；stdio 命令是后台 venv 的 Python，参数 `-m todoboard.mcp`，环境包括同一 `TODOBOARD_DATA_DIR` 与 `PYTHONPATH`。可复制 `integrations/codex/skills/todoboard/` 作为可选技能。
+自定义数据目录时，把命令里的路径换成该目录下的 `integrations/codex`。重启客户端并审核 Hooks；安装成功不等于已经信任。也可以按[官方本地插件文档](https://developers.openai.com/plugins/build/plugins)在桌面插件目录安装。
+
+在 `sources.codexWorkspaces` 显式列出允许留存对话的工作区。UserPromptSubmit Hook 在限定时间内从同一 OV 配置检索背景，失败不阻塞提问。Stop Hook 只写本地收件箱，网络、归档与模型处理放在后台。Hook 不依赖关闭窗口，也不会把工具参数和结果复制成对话记忆。
+
+插件已经携带 MCP 设置；不使用插件时，可把生成的 MCP 设置加入自己的 Codex 配置；stdio 命令是后台 venv 的 Python，参数 `-m todoboard.mcp`，环境包括同一 `TODOBOARD_DATA_DIR` 与 `PYTHONPATH`。可复制 `integrations/codex/skills/todoboard/` 作为可选技能。
 
 `knowledge_read` / `knowledge_search` 供按需取背景；`submit_todo` 用于明确记录；`agent_event` 用于结果和阻塞。配置引用是声明，是否真的加载以 Codex 的能力列表和执行结果为准。
 
@@ -31,3 +39,5 @@ CLI 的非交互执行使用 Codex 自身的策略。需要交互审批或对话
 可以在 CLI 发起后台任务，在 Codex GUI 继续一个持久 thread；具体恢复方式取决于该版本 Codex 的原生功能。TodoBoard 会保存 thread ID，不能保证任意 CLI 会话都能通过实验队列无缝接续。GUI 专用线程由桌面执行；结果监听只读线程，不擅自 resume 或启动回合。
 
 选中工作区时，Board 用 macOS 原生目录选择器保存授权书签，并在投递期间保持访问。执行器自己的文件权限与审批仍需正常通过。
+
+自动候选识别可配置 `extraction.codexHome`，使用独立的 Codex 配置与认证；它不复制任何私人 Skills。该执行器仍使用自身 harness，`TODOBOARD_INTERNAL=1` 让 TodoBoard 自身 Hooks 跳过内部整理。

@@ -6,6 +6,13 @@ from .adapters import CodexAdapter
 from .store import atomic_json
 
 def context(p,task_ids):
+    previous_timeout=getattr(p.ov,'timeout',None)
+    if previous_timeout is not None:p.ov.timeout=min(previous_timeout,8)
+    try:return _context(p,task_ids)
+    finally:
+        if previous_timeout is not None:p.ov.timeout=previous_timeout
+
+def _context(p,task_ids):
     selected=[t for t in p.board.read().tasks if t.id in task_ids];parts=[];errors=[]
     for task in selected:
         for ref in task.source_refs:

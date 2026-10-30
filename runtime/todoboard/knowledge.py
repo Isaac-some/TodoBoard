@@ -3,10 +3,10 @@ import json, subprocess
 from .ov import OpenVikingClient, OpenVikingConfig
 
 class CommandKnowledge:
-    def __init__(self,settings):self.settings=settings;self.capabilities=set(settings.get('capabilities',[]))
+    def __init__(self,settings):self.settings=settings;self.capabilities=set(settings.get('capabilities',[]));self.timeout=120
     def invoke(self,operation,**payload):
         if operation not in self.capabilities:raise RuntimeError('knowledge capability unavailable: '+operation)
-        r=subprocess.run(self.settings['command'],input=json.dumps({'version':1,'operation':operation,**payload}),text=True,capture_output=True,timeout=120)
+        r=subprocess.run(self.settings['command'],input=json.dumps({'version':1,'operation':operation,**payload}),text=True,capture_output=True,timeout=self.timeout)
         if r.returncode:raise RuntimeError('knowledge adapter failed; input retained')
         result=json.loads(r.stdout)
         if result.get('version')!=1:raise ValueError('unsupported knowledge response')

@@ -5,7 +5,7 @@ from .config import load
 from .ledger import Ledger
 from .models import SourceRef, Execution, now_iso, stable_id
 from .ov import OpenVikingClient, OpenVikingConfig
-from .store import BoardStore, atomic_json
+from .store import BoardStore, atomic_json, atomic_text
 
 class Pipeline:
     def __init__(self,root,ov=None):
@@ -16,11 +16,13 @@ class Pipeline:
         if not content.strip():raise ValueError('empty material')
         digest=hashlib.sha256(content.encode()).hexdigest();identity=stable_id('source',kind,source_id,digest)
         folder=self.root/'materials'/identity;folder.mkdir(parents=True,exist_ok=True)
-        (folder/'original.md').write_text(content,encoding='utf-8')
+        original=folder/'original.md'
+        if not original.exists() or hashlib.sha256(original.read_bytes()).hexdigest()!=digest:atomic_text(original,content)
         uri=self.config['knowledge']['resourceRoot'].rstrip('/')+'/'+identity+'/record.md'
         ref={'id':identity,'kind':kind,'title':title,'uri':uri,'observedAt':observed_at or now_iso(),'contentHash':digest,'locator':None}
         metadata={**ref,'sourceID':source_id,'sourceURI':source_uri,'actions':actions}
-        atomic_json(folder/'metadata.json',metadata)
+        if not (folder/'metadata.json').exists():atomic_json(folder/'metadata.json',metadata)
+        else:ref={k:v for k,v in json.loads((folder/'metadata.json').read_text()).items() if k in ref}
         self.ledger.enqueue(identity,'material',{'folder':str(folder),'ref':ref})
         return ref
     def extract(self,content,ref):
@@ -65,7 +67,7 @@ class Pipeline:
         if 'sessions' in getattr(self.ov,'capabilities',set()):
             from .sessions import capture_session
             identity=stable_id('accepted',task['id'],task['doneAt'])
-            capture_session(self,{'id':identity,'sessionID':identity,'messages':[{'role':'user','content':'The user manually accepted this task in TodoBoard. Preserve only reusable experience supported by the evidence. Source: '+uri+'\n'+body},{'role':'assistant','content':task['execution']['summary']}]},publish=False,memory_types=['experiences'])
+            capture_session(self,{'id':identity,'sessionID':identity,'messages':[{'role':'user','content':'The user manually accepted this task in TodoBoard. Preserve only reusable experience supported by the evidence. Source: '+uri+'\n'+body},{'role':'assistant','content':task['execution']['summary']}]},publish=False,memory_types=['cases','trajectories','experiences'])
     def run(self):
         self.accepted_results()
         for job in self.ledger.pending():
@@ -79,3 +81,5 @@ class Pipeline:
                     run_cli(self,payload)
                 self.ledger.state(job['id'],'completed')
             except Exception as e:self.ledger.state(job['id'],'retry',str(e))
+        from .sessions import poll_commit_tasks
+        poll_commit_tasks(self)

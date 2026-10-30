@@ -24,15 +24,15 @@ def main(argv=None):
             from .lifecycle import manage
             result=manage(root,args.command)
         elif args.command=='run-once':
-            from .worker import tick
-            tick(root);result={'state':'checked'}
+            from .worker import main as run_worker
+            checked=run_worker(['--data-dir',str(root),'--once']);result={'state':'checked' if checked else 'worker-already-running'}
         else:
             pipeline=Pipeline(root)
             try:
                 if args.command=='init':
                     pipeline.board.bootstrap();result={'version':1,'dataDir':str(root),'state':'initialized','collectionEnabled':False}
                 elif args.command=='status':
-                    result={'dataDir':str(root),'jobs':[dict(r) for r in pipeline.ledger.db.execute('SELECT id,kind,state,attempts,error FROM jobs')],'tasks':len(pipeline.board.read().tasks),'worker':json.loads((root/'worker-status.json').read_text()) if (root/'worker-status.json').exists() else None}
+                    result={'dataDir':str(root),'jobs':[dict(r) for r in pipeline.ledger.db.execute('SELECT id,kind,state,attempts,error FROM jobs')],'memoryTasks':[json.loads(r[0]) for r in pipeline.ledger.db.execute("SELECT value FROM kv WHERE id LIKE 'memory-task:%'")],'inboxErrors':len(list((root/'inbox').glob('*.error'))),'tasks':len(pipeline.board.read().tasks),'worker':json.loads((root/'worker-status.json').read_text()) if (root/'worker-status.json').exists() else None}
                 elif args.command=='doctor':
                     config=load(root);result={'python':sys.version.split()[0],'dataDir':str(root),'codex':bool(shutil.which(config['defaultAgent'].get('executable','codex'))),'knowledgeEnabled':config['knowledge']['enabled'],'openvikingRequired':'0.5.2.1'}
                     if config['knowledge']['enabled']:result['knowledge']=pipeline.ov.health()

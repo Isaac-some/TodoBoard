@@ -15,8 +15,11 @@ jobs:
       - run: swift test --scratch-path .build-local
       - run: python scripts/check-publication.py
       - run: ./scripts/build-app.sh
-      - run: tar -czf dist/TodoBoard-runtime.tar.gz runtime pyproject.toml README.md LICENSE THIRD_PARTY_NOTICES.md scripts/install-runtime.sh
+      - run: bash scripts/package-runtime.sh
+      - run: python scripts/check-publication.py --artifacts
       - run: shasum -a 256 dist/TodoBoard.zip dist/TodoBoard-runtime.tar.gz > dist/SHA256SUMS
       - env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/TodoBoard.zip dist/TodoBoard-runtime.tar.gz dist/SHA256SUMS --generate-notes
+        run: |
+          gh release view "$GITHUB_REF_NAME" || gh release create "$GITHUB_REF_NAME" --generate-notes
+          gh release upload "$GITHUB_REF_NAME" dist/TodoBoard.zip dist/TodoBoard-runtime.tar.gz dist/SHA256SUMS --clobber

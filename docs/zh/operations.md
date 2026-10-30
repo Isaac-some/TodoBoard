@@ -11,7 +11,7 @@ cd ~/Projects/TodoBoard
 .venv/bin/todoboardctl run-once
 ```
 
-start 安装当前用户的 LaunchAgent，Label 带数据目录哈希。它与其他实例、原个人环境分别运行。退出 Board 不会停止它；登录后自动启动，休眠恢复后继续轮询。stop 只停止对应 Label，不删除资料、卡片或游标。
+start 安装当前用户的 LaunchAgent，Label 带数据目录哈希。它与其他实例、原个人环境分别运行。退出 Board 不会停止它；登录后自动启动，休眠恢复后继续轮询。stop 停止对应 Label 并移除该实例的登录注册，保留资料、卡片和游标。run-once 遇到已有后台时报告 `worker-already-running`，避免并发处理同一队列。
 
 后台每轮核对显式目录、飞书覆盖范围、inbox、归档任务和 GUI 结果。资料失败后保留队列，默认一分钟后重试。飞书使用成功覆盖游标，保留一天重叠窗口处理迟到资料；离线或缺权限不前移游标。
 

@@ -6,7 +6,7 @@ from todoboard.pipeline import Pipeline
 from todoboard.models import Execution,SourceRef
 from todoboard.delivery import dispatch,apply_event,context
 from todoboard.hook import capture
-from todoboard.sessions import capture_session,archive_submission
+from todoboard.sessions import capture_session,archive_submission,poll_commit_tasks
 
 class FakeOV:
     def __init__(self):self.files={};self.offline=False;self.calls=[]
@@ -87,5 +87,24 @@ class RuntimeTests(unittest.TestCase):
         path=self.root/'tasks.json';path.write_text('broken')
         with self.assertRaises(ValueError):self.p.board.add_candidate('T')
         self.assertEqual(path.read_text(),'broken')
+    def test_compacted_transcript_retains_new_turns_without_repeating_old_ones(self):
+        self.enable()
+        first={'id':'first','sessionID':'session','messages':[{'role':'user','content':'old','created_at':'1'},{'role':'assistant','content':'reply','created_at':'2'}]}
+        capture_session(self.p,first)
+        compacted={'id':'compacted','sessionID':'session','messages':[first['messages'][-1],{'role':'user','content':'new','created_at':'3'}]}
+        capture_session(self.p,compacted);capture_session(self.p,compacted)
+        batches=[x[2]['messages'] for x in self.ov.calls if x[1].endswith('/messages/batch')]
+        self.assertEqual(len(batches),2);self.assertEqual(batches[1],[compacted['messages'][-1]])
+    def test_phase_two_failure_is_visible_separately_from_archive_receipt(self):
+        self.enable();self.ov.capabilities={'sessions'}
+        self.p.ledger.put('memory-task:failed',{'taskID':'failed','state':'pending'})
+        self.ov.request=lambda *a,**k:{'status':'failed','stage':'failed','error':'model authorization expired'}
+        poll_commit_tasks(self.p)
+        self.assertEqual(self.p.ledger.get('memory-task:failed')['state'],'failed')
+        self.assertEqual(self.p.board.read().tasks,[])
+    def test_repeated_source_keeps_original_record_time(self):
+        first=self.p.submit('stable','local','T','same text',observed_at='2026-01-01T00:00:00Z')
+        second=self.p.submit('stable','local','T','same text',observed_at='2026-02-01T00:00:00Z')
+        self.assertEqual(first,second)
 
 if __name__=='__main__':unittest.main()

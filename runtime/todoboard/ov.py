@@ -23,7 +23,7 @@ class OpenVikingClient:
     def __init__(self,config=None,timeout=120):self.config,self.timeout,self.checked=config or OpenVikingConfig.load(),timeout,False
     def request(self,method,path,payload=None,query=None):
         if path!='/health' and not self.checked:
-            health=self.request('GET','/health')
+            health=self.health()
             if health.get('version')!='0.5.2.1':raise RuntimeError('OpenViking version mismatch: expected official 0.5.2.1')
             self.checked=True
         url=self.config.url.rstrip('/')+path
@@ -38,7 +38,10 @@ class OpenVikingClient:
         except urllib.error.HTTPError as e:raise RuntimeError(f'OpenViking HTTP {e.code}: {path}') from None
         if value.get('status')=='error':raise RuntimeError('OpenViking operation failed: '+path)
         return value.get('result',value)
-    def health(self):return self.request('GET','/health')
+    def health(self):
+        result=self.request('GET','/health')
+        if result.get('version')!='0.5.2.1':raise RuntimeError('OpenViking version mismatch: expected official 0.5.2.1')
+        return result
     def read(self,uri,offset=0,limit=-1):return self.request('GET','/api/v1/content/read',query={'uri':uri,'offset':offset,'limit':limit})
     def write(self,uri,content,mode='replace',wait=True):return self.request('POST','/api/v1/content/write',{'uri':uri,'content':content,'mode':mode,'wait':wait})
     def search(self,query,target_uri='viking://resources',limit=8):return self.request('POST','/api/v1/search/find',{'query':query,'target_uri':target_uri,'limit':limit})
