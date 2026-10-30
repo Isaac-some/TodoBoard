@@ -1,0 +1,2 @@
+# Official, unmodified release; separate environment/service.
+openviking==0.5.2.1

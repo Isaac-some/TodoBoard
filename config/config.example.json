@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "sources": {
+    "directories": [],
+    "codexWorkspaces": [],
+    "feishu": {
+      "enabled": false,
+      "cliPath": "lark-cli",
+      "initialLookbackDays": 7,
+      "intervalMinutes": 20
+    }
+  },
+  "knowledge": {
+    "provider": "openviking",
+    "configFile": "~/.config/todoboard/ovcli.conf",
+    "resourceRoot": "viking://resources/todoboard",
+    "searchRoot": "viking://resources",
+    "enabled": false
+  },
+  "agents": {},
+  "defaultAgent": {
+    "adapter": "codex-gui",
+    "executable": "codex"
+  },
+  "extraction": {
+    "enabled": false,
+    "executable": "codex",
+    "model": null
+  },
+  "pollSeconds": 60
+}

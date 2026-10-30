@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"TodoBoard knowledge request v1","type":"object","required":["version","operation"],"properties":{"version":{"const":1},"operation":{"enum":["read","write","search"]},"uri":{"type":"string"},"query":{"type":"string"},"target_uri":{"type":"string"},"content":{"type":"string"}}}

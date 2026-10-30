@@ -1,0 +1,12 @@
+{
+  "openviking": {
+    "version": "0.5.2.1",
+    "source": "https://github.com/volcengine/OpenViking/releases/tag/v0.5.2.1",
+    "modified": false,
+    "verifiedLatestAt": "2026-10-30",
+    "license": "AGPL-3.0"
+  },
+  "larkCli": {"package": "@larksuite/cli", "version": "1.0.98", "license": "MIT"},
+  "codex": {"tested": "0.166.0-alpha.5.1", "guiQueue": "experimental; requires runtime capability check"},
+  "archify": {"source": "https://github.com/tt-a1i/archify", "version": "3.2", "license": "MIT"}
+}
