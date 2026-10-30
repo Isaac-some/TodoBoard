@@ -1,10 +1,11 @@
 import json,multiprocessing,tempfile,unittest,uuid
+from unittest.mock import patch
 from pathlib import Path
 from todoboard.config import initialize,load
 from todoboard.store import BoardStore,atomic_json
 from todoboard.pipeline import Pipeline
 from todoboard.models import Execution,SourceRef
-from todoboard.delivery import dispatch,apply_event,context
+from todoboard.delivery import dispatch,apply_event,context,poll_gui_results
 from todoboard.hook import capture
 from todoboard.sessions import capture_session,archive_submission,poll_commit_tasks
 
@@ -110,5 +111,32 @@ class RuntimeTests(unittest.TestCase):
         first=self.p.submit('stable','local','T','same text',observed_at='2026-01-01T00:00:00Z')
         second=self.p.submit('stable','local','T','same text',observed_at='2026-02-01T00:00:00Z')
         self.assertEqual(first,second)
+    def test_gui_waits_for_correlated_turn_and_ignores_empty_interruptions(self):
+        t=self.p.board.add_candidate('GUI task');self.p.board.change(lambda b:b['tasks'][0].update(status='today'))
+        identity=str(uuid.uuid4());packet={'taskIDs':[t.id],'cwd':str(self.root)}
+        receipt={'adapter':'codex-gui','threadID':str(uuid.uuid4())}
+        with self.p.ledger.db:self.p.ledger.db.execute('INSERT INTO deliveries VALUES(?,?,?,?)',(identity,json.dumps(packet),'queued',json.dumps(receipt)))
+        empty={'id':'empty','status':'interrupted','items':[]}
+        with patch('todoboard.rpc.RPC') as rpc:
+            read=rpc.return_value.__enter__.return_value.call
+            read.return_value={'thread':{'turns':[empty]}};poll_gui_results(self.p)
+            self.assertEqual(self.p.ledger.db.execute('SELECT state FROM deliveries').fetchone()[0],'queued')
+            matching={'id':'actual','status':'completed','items':[{'type':'userMessage','clientId':identity},{'type':'agentMessage','text':'Actual result'}]}
+            other={'id':'other','status':'completed','items':[{'type':'userMessage','clientId':'different'},{'type':'agentMessage','text':'Unrelated'}]}
+            read.return_value={'thread':{'turns':[empty,matching,other]}};poll_gui_results(self.p)
+            task=self.p.board.read().tasks[0];self.assertEqual(task.execution.summary,'Actual result');self.assertEqual(task.status,'today')
+    def test_fresh_gui_submission_does_not_read_or_resume_thread(self):
+        from todoboard.adapters import CodexAdapter
+        identity=str(uuid.uuid4());thread=str(uuid.uuid4());calls=[]
+        def call(method,params):
+            calls.append(method)
+            if method=='thread/start':return {'thread':{'id':thread}}
+            if method=='thread/name/set':return {}
+            if method=='thread/queue/add':return {'queuedSubmission':{'id':'queue-id','clientUserMessageId':identity}}
+            raise AssertionError('A fresh thread must stay unloaded before queueing: '+method)
+        with patch('todoboard.adapters.RPC') as rpc:
+            rpc.return_value.__enter__.return_value.call.side_effect=call
+            receipt=CodexAdapter(self.root,self.p.ledger,{}).gui({'cwd':str(self.root),'prompt':'Synthetic'},identity)
+        self.assertEqual(receipt['submissionID'],'queue-id');self.assertEqual(calls,['thread/start','thread/name/set','thread/queue/add'])
 
 if __name__=='__main__':unittest.main()

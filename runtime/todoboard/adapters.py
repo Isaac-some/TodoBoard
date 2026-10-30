@@ -31,6 +31,7 @@ class CodexAdapter:
         executable=self.settings.get('executable','codex');key='gui:'+delivery_id
         saved=self.ledger.get(key,{})
         thread=saved.get('threadID')
+        recovering=bool(thread)
         if not thread:
             with RPC(executable,packet['cwd']) as rpc:
                 parameters={'cwd':packet['cwd'],'ephemeral':False,'developerInstructions':packet.get('instructions','')}
@@ -42,7 +43,7 @@ class CodexAdapter:
         submission=None
         with RPC(executable,packet['cwd']) as rpc:
             cursor=None
-            while True:
+            while recovering:
                 params={'threadId':thread,'limit':100}
                 if cursor:params['cursor']=cursor
                 page=rpc.call('thread/queue/list',params)
@@ -50,7 +51,7 @@ class CodexAdapter:
                     if item.get('clientUserMessageId')==delivery_id:submission=item['id']
                 cursor=page.get('nextCursor')
                 if not cursor:break
-            if not submission:
+            if recovering and not submission:
                 history=rpc.call('thread/read',{'threadId':thread,'includeTurns':True})
                 for turn in history.get('thread',{}).get('turns',[]):
                     for item in turn.get('items',[]):

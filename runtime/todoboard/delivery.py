@@ -109,8 +109,11 @@ def poll_gui_results(p):
         try:
             with RPC(settings.get('executable','codex'),packet['cwd']) as rpc:data=rpc.call('thread/read',{'threadId':receipt['threadID'],'includeTurns':True})
             turns=data.get('thread',{}).get('turns',[])
-            if not turns:continue
-            turn=turns[-1];status=turn.get('status')
+            # Empty startup/interrupted turns and later unrelated user turns are
+            # not the result of this delivery. Correlate the original client ID.
+            matching=[turn for turn in turns if any(item.get('type')=='userMessage' and item.get('clientId')==row['id'] for item in turn.get('items',[]))]
+            if not matching:continue
+            turn=matching[-1];status=turn.get('status')
             if status not in {'completed','failed','interrupted'}:continue
             summaries=[x.get('text','') for x in turn.get('items',[]) if x.get('type')=='agentMessage']
             state='result' if status=='completed' else 'failed'

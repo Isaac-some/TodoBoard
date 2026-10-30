@@ -10,7 +10,7 @@ CLI 的非交互执行使用 Codex 自身的策略。需要交互审批或对话
 
 ## GUI 桌面交接
 
-`codex-gui` 通过本地 App Server 创建持久 thread，结束临时服务器，再在未加载 thread 的服务器中调用 `thread/queue/list`、`thread/read` 和 `thread/queue/add`。随后 App 打开 Codex deep link，由桌面应用接管执行。
+`codex-gui` 通过本地 App Server 创建持久 thread，结束临时服务器，再在未加载 thread 的服务器中调用 `thread/queue/add`。恢复投递时才额外检查 `thread/queue/list` 和 `thread/read`。随后 App 打开 Codex deep link，由桌面应用接管执行。结果监听核对 `clientUserMessageId / clientId`，忽略空的中断占位回合和不属于本次请求的其他回合。
 
 不能在临时 App Server 启动回合后立刻退出；那会把执行生命周期留在临时进程里。这里保存的是真实 thread / submission 回执，并按 request ID 检查已排队和已消费输入，避免重发。
 
@@ -41,3 +41,5 @@ codex plugin add todoboard@todoboard-local
 选中工作区时，Board 用 macOS 原生目录选择器保存授权书签，并在投递期间保持访问。执行器自己的文件权限与审批仍需正常通过。
 
 自动候选识别可配置 `extraction.codexHome`，使用独立的 Codex 配置与认证；它不复制任何私人 Skills。该执行器仍使用自身 harness，`TODOBOARD_INTERNAL=1` 让 TodoBoard 自身 Hooks 跳过内部整理。
+
+角色配置在工作区 `.todoboard/agents/<id>/AGENTS.md` 与 `agent.json` 留存，任务包标记这些位置。GUI 恢复线程时客户端可能重建 developer instructions，因此执行时按引用读取当前角色定义，避免依赖临时 App Server 的内存配置。CLI 同时接收配置指令；两者都继续遵守原生 harness 的权限与工具配置。
