@@ -14,6 +14,7 @@ class CodexAdapter:
         folder=self.root/'deliveries'/delivery_id;folder.mkdir(parents=True,exist_ok=True)
         argv=[self.settings.get('executable','codex'),'exec','--json','-C',packet['cwd']]
         if self.settings.get('model'):argv+=['-m',self.settings['model']]
+        if packet.get('instructions'):argv+=['-c','developer_instructions='+json.dumps(packet['instructions'],ensure_ascii=False)]
         argv+=['--skip-git-repo-check','-']
         with (folder/'events.jsonl').open('w') as out,(folder/'stderr.log').open('w') as err:
             r=subprocess.run(argv,input=packet['prompt'],text=True,stdout=out,stderr=err,env={**os.environ,'TODOBOARD_DATA_DIR':str(self.root),'TODOBOARD_DELIVERY_ID':delivery_id},timeout=self.settings.get('timeoutSeconds',3600))
@@ -32,7 +33,9 @@ class CodexAdapter:
         thread=saved.get('threadID')
         if not thread:
             with RPC(executable,packet['cwd']) as rpc:
-                t=rpc.call('thread/start',{'cwd':packet['cwd'],'ephemeral':False,'approvalPolicy':'on-request','sandbox':'workspace-write','developerInstructions':packet.get('instructions','')})
+                parameters={'cwd':packet['cwd'],'ephemeral':False,'developerInstructions':packet.get('instructions','')}
+                if self.settings.get('model'):parameters['model']=self.settings['model']
+                t=rpc.call('thread/start',parameters)
                 thread=t['thread']['id'];uuid.UUID(thread)
                 self.ledger.put(key,{'threadID':thread})
                 rpc.call('thread/name/set',{'threadId':thread,'name':packet.get('title','TodoBoard')})

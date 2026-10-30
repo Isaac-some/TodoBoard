@@ -59,7 +59,11 @@ class RuntimeTests(unittest.TestCase):
         apply_event(self.p,event);apply_event(self.p,event)
         self.assertEqual(self.p.board.read().tasks[0].status,'backlog');self.assertEqual(self.p.ledger.db.execute('SELECT count(*) FROM events').fetchone()[0],1)
         self.p.run();self.assertFalse(any('/accepted/'in x for x in self.ov.files))
+        self.ov.capabilities={'sessions'}
         self.p.board.mark_done(t.id,'Human acceptance of synthetic output');self.p.run();self.assertTrue(any('/accepted/'in x for x in self.ov.files))
+        session=next(x for x in self.ov.calls if x[1]=='/api/v1/sessions')
+        self.assertEqual(set(session[2]['memory_policy']['memory_types']),{'cases','trajectories','experiences'})
+        receipt=self.p.ledger.get('memory-task:t1');self.assertEqual(receipt['cardID'],t.id);self.assertIn('/accepted/',receipt['sourceURI'])
     def test_context_uses_retained_source_when_ov_offline(self):
         ref=self.p.submit('r','local','Source','Exact source evidence.',actions=[]);t=self.p.board.add_candidate('T',refs=[SourceRef.from_dict(ref)])
         self.ov.offline=True;r=context(self.p,[t.id]);self.assertIn('Exact source evidence.',r['sources'][0]['content'])
