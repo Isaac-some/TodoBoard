@@ -108,7 +108,7 @@ struct AgentWorkspaceView: View {
                 Text("分配给 \(workspace.selected?.name ?? "智能体")").font(.system(size: 12, weight: .semibold))
                 Spacer()
                 Menu {
-                    ForEach(store.board.tasks.filter { !workspace.draft.taskIDs.contains($0.id) }) { task in
+                    ForEach(store.board.tasks.filter { ($0.status == .today || $0.status == .doing) && !workspace.draft.taskIDs.contains($0.id) }) { task in
                         Button(task.title) { store.setStatus(taskID: task.id, .doing); addTask(task.id) }
                     }
                 } label: { Label("选择任务", systemImage: "plus") }.fixedSize()

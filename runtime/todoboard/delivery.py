@@ -38,6 +38,10 @@ def _dispatch(p,packet):
     if prior and prior['receipt']:return json.loads(prior['receipt'])
     settings={**p.config['defaultAgent'],**p.config['agents'].get(packet.get('agentID',''),{})}
     packet=dict(packet)
+    if not prior:
+        cards={t.id:t for t in p.board.read().tasks}
+        for task_id in packet['taskIDs']:
+            if task_id not in cards or cards[task_id].status not in {'today','doing'}:raise ValueError('先在 Board 将候选接纳到待办或进行中，再分发。')
     if not Path(packet['cwd']).is_dir():raise ValueError('workspace does not exist')
     if not prior:
         packet['context']=context(p,packet.get('taskIDs',[]))

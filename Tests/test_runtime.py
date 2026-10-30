@@ -65,10 +65,10 @@ class RuntimeTests(unittest.TestCase):
         self.ov.offline=True;r=context(self.p,[t.id]);self.assertIn('Exact source evidence.',r['sources'][0]['content'])
     def test_cli_submission_is_durable_and_retry_keeps_receipt(self):
         self.p.config['defaultAgent']={'adapter':'codex-cli','executable':'not-called-in-submit'}
-        t=self.p.board.add_candidate('T');packet={'version':1,'requestID':str(uuid.uuid4()),'cwd':str(self.root),'taskIDs':[t.id],'prompt':'Synthetic'}
+        t=self.p.board.add_candidate('T');self.p.board.change(lambda b:b['tasks'][0].update(status='today'));packet={'version':1,'requestID':str(uuid.uuid4()),'cwd':str(self.root),'taskIDs':[t.id],'prompt':'Synthetic'}
         first=dispatch(self.p,packet);second=dispatch(self.p,packet);self.assertEqual(first,second)
         self.assertEqual(self.p.ledger.db.execute("SELECT count(*) FROM jobs WHERE kind='agent-cli'").fetchone()[0],1)
-        self.assertEqual(self.p.board.read().tasks[0].execution.state,'queued');self.assertEqual(self.p.board.read().tasks[0].status,'backlog')
+        self.assertEqual(self.p.board.read().tasks[0].execution.state,'queued');self.assertEqual(self.p.board.read().tasks[0].status,'today')
     def test_capture_is_explicitly_scoped_and_ignores_tools(self):
         transcript=self.root/'transcript.jsonl';transcript.write_text('\n'.join(json.dumps(x) for x in [
           {'type':'response_item','payload':{'type':'message','role':'user','content':[{'type':'input_text','text':'Record a synthetic observation.'}]}},
