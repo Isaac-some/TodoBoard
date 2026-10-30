@@ -8,7 +8,7 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/Isaac-some/TodoBoard.git",
-      "revision": "299ee11b17c187f52c666835ab985401bd6f838d"
+      "revision": "9093fc17ab58cc75b9a74f7663b2c36c5091934c"
     }
   },
   "lanes": [
@@ -146,8 +146,8 @@
       "sources": [
         {
           "path": "runtime/todoboard/delivery.py",
-          "line": 82,
-          "end_line": 96
+          "line": 110,
+          "end_line": 131
         },
         {
           "path": "Sources/BoardUI/TaskViews.swift",
