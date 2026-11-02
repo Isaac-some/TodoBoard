@@ -74,6 +74,7 @@ struct KanbanColumn: View {
                     .background(BoardPalette.violet.opacity(0.1), in: RoundedRectangle(cornerRadius: 7))
                     .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(BoardPalette.violet))
                     .onSubmit(addTask)
+                    .onExitCommand { adding = false; title = "" }
                     .accessibilityLabel("\(status.label)新任务标题")
                 HStack {
                     Button("取消") { adding = false; title = "" }

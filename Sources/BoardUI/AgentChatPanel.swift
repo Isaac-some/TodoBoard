@@ -6,7 +6,7 @@ struct AgentChatPanel: View {
     @EnvironmentObject private var workspace: AgentWorkspaceStore
     @EnvironmentObject private var board: BoardStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @FocusState private var composing: Bool
+    @State private var composing = false
     @State private var acknowledging = false
     @State private var flying = false
 
@@ -23,6 +23,7 @@ struct AgentChatPanel: View {
                     workspace.updateDraft { $0.instruction = text }
                     acknowledging = false
                 }), isFocused: $composing)
+                .id(workspace.selectedID)
                 .accessibilityLabel("给 Codex 的任务说明")
                 if acknowledging {
                     VStack(spacing: 10) {

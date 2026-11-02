@@ -9,7 +9,6 @@ struct AgentWorkspaceView: View {
     @Binding var dragging: String?
     var onCollapse: () -> Void = {}
     @State private var showingAddAgent = false
-    @State private var agentName = ""
     @State private var selectedTaskID: String?
     @State private var agentDragID: String?
 
@@ -30,13 +29,14 @@ struct AgentWorkspaceView: View {
                 }
                 .buttonStyle(.plain).help(workspace.selectedWorkspacePath)
                 .accessibilityLabel("选择 Codex 工作区：\(workspace.selectedWorkspaceName)")
+                .disabled(workspace.selected == nil)
                 Button(action: onCollapse) { Image(systemName: "chevron.down").frame(width: 26, height: 24) }
                     .buttonStyle(.plain).accessibilityLabel("收起智能体工作区")
             }
             HStack(alignment: .top, spacing: 16) {
                 agentRail.frame(width: 86)
                 Divider()
-                taskBoard.frame(width: 340)
+                taskBoard.frame(width: 340).disabled(workspace.selected == nil)
                 Divider()
                 VStack(alignment: .leading, spacing: 8) {
                     if workspace.setupAgentIDs.contains(workspace.selectedID) {
@@ -46,21 +46,27 @@ struct AgentWorkspaceView: View {
                             Button("检查配置") { workspace.finishAgentSetup() }.font(.caption)
                         }
                     }
-                    AgentChatPanel()
+                    if workspace.selected != nil {
+                        AgentChatPanel()
+                    } else {
+                        VStack(spacing: 12) {
+                            Text("还没有智能体").font(.system(size: 14, weight: .medium))
+                            Button("添加智能体") { showingAddAgent = true }
+                            Text("取名、选择头像，再配置能力和执行流程。")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
                 }.frame(minWidth: 380, maxWidth: .infinity)
             }
         }
         .padding(14)
         .background(Color.black.opacity(0.25), in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.white.opacity(0.1)))
-        .alert("添加智能体", isPresented: $showingAddAgent) {
-            TextField("名称", text: $agentName)
-            Button("取消", role: .cancel) { agentName = "" }
-            Button("交给 Codex 创建") {
-                do { try workspace.createAgent(name: agentName); agentName = "" }
-                catch { workspace.error = error.localizedDescription }
-            }.disabled(agentName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        } message: { Text("先取名，再到 Codex 配置能力和执行流程。") }
+        .sheet(isPresented: $showingAddAgent) {
+            AgentCreationSheet(initialAvatar: workspace.suggestedAvatar) { name, avatar in
+                try workspace.createAgent(name: name, avatar: avatar)
+            }
+        }
         .alert("智能体工作区", isPresented: Binding(get: { workspace.error != nil }, set: { if !$0 { workspace.error = nil } })) {
             Button("知道了") { workspace.error = nil }
         } message: { Text(workspace.error ?? "") }
@@ -185,18 +191,9 @@ struct AgentWorkspaceView: View {
 struct AgentAvatar: View {
     let profile: AgentProfile
     let selected: Bool
-    private var avatar: NSImage? {
-        let bundled = Bundle.main.resourceURL?.appendingPathComponent("Avatars/\(profile.avatar).png")
-        if let url = bundled, let image = NSImage(contentsOf: url) { return image }
-        let development = Bundle.module.url(forResource: profile.avatar, withExtension: "png", subdirectory: "Avatars")
-        return development.flatMap { NSImage(contentsOf: $0) }
-    }
     var body: some View {
         GeometryReader { geo in
-            Group {
-                if let avatar { Image(nsImage: avatar).resizable().scaledToFill() }
-                else { Circle().fill(.cyan.opacity(0.3)).overlay(Text(String(profile.name.prefix(1)))) }
-            }
+            AgentPortrait(avatar: profile.avatar, fallback: profile.name)
             .frame(width: geo.size.width, height: geo.size.height).clipShape(Circle())
             .saturation(selected ? 1 : 0).opacity(selected ? 1 : 0.45)
             .overlay(alignment: .bottomTrailing) {

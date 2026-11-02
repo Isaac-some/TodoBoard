@@ -24,7 +24,7 @@ public struct AgentProfile: Codable, Equatable, Identifiable, Sendable {
               !background.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw AgentProtocolError.invalid("名称、背景和 ID 不能为空")
         }
-        guard ["yuki", "matt", "sofia", "richard"].contains(avatar) else {
+        guard AgentAvatarOption(rawValue: avatar) != nil else {
             throw AgentProtocolError.invalid("头像须为 yuki、matt、sofia 或 richard")
         }
     }

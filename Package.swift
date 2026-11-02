@@ -13,7 +13,7 @@ let package = Package(
             name: "BoardUI",
             dependencies: ["BoardKit"],
             path: "Sources/BoardUI",
-            resources: [.copy("Avatars")]
+            resources: [.copy("Avatars"), .copy("SetupInterview")]
         ),
         .executableTarget(
             name: "TodoBoardApp",

@@ -218,7 +218,7 @@ final class PanelController: ObservableObject {
     private func checkMouseExit() {
         guard expanded else { outsideSince = nil; return }
         let editingText = panel.firstResponder is NSTextView
-        let menuOpen = NSApp.windows.contains { $0.isVisible && $0 != panel && $0.level.rawValue >= NSWindow.Level.popUpMenu.rawValue }
+        let menuOpen = panel.attachedSheet != nil || NSApp.modalWindow != nil || NSApp.windows.contains { $0.isVisible && $0 != panel && $0.level.rawValue >= NSWindow.Level.popUpMenu.rawValue }
         guard !interactionActive, !editingText, !menuOpen, NSEvent.pressedMouseButtons == 0,
               !panel.frame.contains(NSEvent.mouseLocation) else {
             outsideSince = nil
@@ -279,6 +279,9 @@ final class PanelController: ObservableObject {
     private func installMonitors() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53, let self, self.expanded, self.panel.isKeyWindow {
+                // Let input methods cancel marked text, and let overlays handle
+                // their own save/dismiss command before collapsing the board.
+                if self.interactionActive || self.panel.attachedSheet != nil || NSApp.modalWindow != nil || self.panel.firstResponder is NSTextView { return event }
                 self.collapse()
                 return nil
             }

@@ -14,8 +14,23 @@ public struct TaskDetailSheet: View {
     @State private var status: TaskStatus = .today
     @State private var tagsText: String = ""
     @State private var notes: String = ""
+    @State private var finished = false
+    private var hasTitle: Bool { !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     public var body: some View {
+        ZStack {
+            Color.black.opacity(0.6).onTapGesture { saveAndClose() }
+            detail.frame(width: 500).padding(20)
+        }
+        .onExitCommand { saveAndClose() }
+        .onDisappear {
+            // Collapsing the panel destroys this view too. Preserve the edit
+            // just as closing the detail does, without resurrecting discarded tasks.
+            if !finished { saveAndClose() }
+        }
+    }
+
+    private var detail: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("任务详情")
@@ -33,6 +48,10 @@ public struct TaskDetailSheet: View {
 
             TextField("标题", text: $title)
                 .textFieldStyle(.roundedBorder)
+                .accessibilityLabel("任务标题")
+            if !hasTitle {
+                Text("请填写任务标题").font(.caption).foregroundStyle(.orange)
+            }
 
             HStack(spacing: 10) {
                 Picker("优先级", selection: $priority) {
@@ -54,12 +73,14 @@ public struct TaskDetailSheet: View {
 
             TextField("标签（空格分隔）", text: $tagsText)
                 .textFieldStyle(.roundedBorder)
+                .accessibilityLabel("任务标签")
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("备注与来源")
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
                 TextEditor(text: $notes)
+                    .accessibilityLabel("任务备注")
                     .font(.system(size: 12, design: .monospaced))
                     .frame(height: 110)
                     .scrollContentBackground(.hidden)
@@ -94,6 +115,7 @@ public struct TaskDetailSheet: View {
             }
             HStack {
                 Button(role: .destructive) {
+                    finished = true
                     store.deleteTask(taskID: task.id)
                     isPresented = false
                 } label: {
@@ -103,14 +125,17 @@ public struct TaskDetailSheet: View {
                 .controlSize(.small)
                 Spacer()
                 if task.status == .done {
-                    Button("撤销完成") { store.toggleDone(taskID: task.id); isPresented = false }
+                    Button("撤销完成") { saveAndClose(status: .today) }
                         .controlSize(.small)
+                        .disabled(!hasTitle)
                 } else {
-                    Button("完成") { store.setStatus(taskID: task.id, .done); isPresented = false }
+                    Button("完成") { saveAndClose(status: .done) }
                         .controlSize(.small)
+                        .disabled(!hasTitle)
                 }
                 Button("保存") { saveAndClose() }
                     .controlSize(.small)
+                    .disabled(!hasTitle)
                     .keyboardShortcut(.return, modifiers: [])
             }
         }
@@ -128,8 +153,8 @@ public struct TaskDetailSheet: View {
         }
     }
 
-    private func saveAndClose() {
-        var updated = task
+    private func saveAndClose(status overrideStatus: TaskStatus? = nil) {
+        guard hasTitle, var updated = store.board.task(withID: task.id) else { return }
         updated.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         updated.priority = priority
         updated.notes = notes
@@ -137,12 +162,14 @@ public struct TaskDetailSheet: View {
             .split(whereSeparator: { $0 == " " || $0 == "," || $0 == "，" })
             .map { String($0).trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
-        if status != task.status {
+        let destination = overrideStatus ?? status
+        if destination != updated.status {
             store.updateTask(updated)
-            store.setStatus(taskID: task.id, status)
+            store.setStatus(taskID: task.id, destination)
         } else {
             store.updateTask(updated)
         }
+        finished = true
         isPresented = false
     }
 }

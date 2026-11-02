@@ -4,7 +4,7 @@ import SwiftUI
 /// Placeholder and caret use exactly the same text container and font metrics.
 struct AgentInstructionEditor: NSViewRepresentable {
     @Binding var text: String
-    var isFocused: FocusState<Bool>.Binding
+    @Binding var isFocused: Bool
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeNSView(context: Context) -> NSScrollView {
@@ -13,6 +13,7 @@ struct AgentInstructionEditor: NSViewRepresentable {
         scroll.hasVerticalScroller = true
         let editor = PlaceholderTextView()
         editor.isRichText = false
+        editor.allowsUndo = true
         editor.isAutomaticQuoteSubstitutionEnabled = false
         editor.font = .systemFont(ofSize: 13)
         editor.textColor = .labelColor
@@ -25,6 +26,9 @@ struct AgentInstructionEditor: NSViewRepresentable {
         editor.textContainer?.widthTracksTextView = true
         editor.textContainer?.containerSize = NSSize(width: scroll.contentSize.width, height: .greatestFiniteMagnitude)
         editor.delegate = context.coordinator
+        editor.onFocusChange = { [weak coordinator = context.coordinator] focused in
+            coordinator?.parent.isFocused = focused
+        }
         editor.string = text
         scroll.documentView = editor
         return scroll
@@ -32,9 +36,13 @@ struct AgentInstructionEditor: NSViewRepresentable {
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         context.coordinator.parent = self
         guard let editor = scroll.documentView as? PlaceholderTextView else { return }
-        if editor.string != text { editor.string = text }
+        // Never replace marked text while the input method is composing.
+        if !editor.hasMarkedText(), editor.string != text {
+            editor.string = text
+            editor.undoManager?.removeAllActions()
+        }
         editor.needsDisplay = true
-        if !isFocused.wrappedValue, editor.window?.firstResponder === editor {
+        if !isFocused, editor.window?.firstResponder === editor {
             editor.window?.makeFirstResponder(nil)
         }
     }
@@ -46,12 +54,21 @@ struct AgentInstructionEditor: NSViewRepresentable {
             parent.text = editor.string
             editor.needsDisplay = true
         }
-        func textDidBeginEditing(_ notification: Notification) { parent.isFocused.wrappedValue = true }
-        func textDidEndEditing(_ notification: Notification) { parent.isFocused.wrappedValue = false }
     }
 }
 
 final class PlaceholderTextView: NSTextView {
+    var onFocusChange: ((Bool) -> Void)?
+    override func becomeFirstResponder() -> Bool {
+        let accepted = super.becomeFirstResponder()
+        if accepted { onFocusChange?(true) }
+        return accepted
+    }
+    override func resignFirstResponder() -> Bool {
+        let accepted = super.resignFirstResponder()
+        if accepted { onFocusChange?(false) }
+        return accepted
+    }
     override var string: String { didSet { needsDisplay = true } }
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)

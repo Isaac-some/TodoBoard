@@ -12,6 +12,7 @@ public struct SettingsSheet: View {
     public var loginItemState: () -> Bool = { false }
     public var toggleLoginItem: (Bool) -> Bool = { _ in false }
     @State private var loginEnabled = false
+    @FocusState private var focused: Bool
 
     public init(isPresented: Binding<Bool>, loginItemState: @escaping () -> Bool = { false }, toggleLoginItem: @escaping (Bool) -> Bool = { _ in false }) {
         _isPresented = isPresented
@@ -88,6 +89,9 @@ public struct SettingsSheet: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.12)))
         .shadow(color: .black.opacity(0.25), radius: 12)
-        .onAppear { loginEnabled = loginItemState() }
+        .focusable()
+        .focused($focused)
+        .onExitCommand { isPresented = false }
+        .onAppear { loginEnabled = loginItemState(); focused = true }
     }
 }

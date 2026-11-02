@@ -90,12 +90,11 @@ public struct BoardContentView: View {
 
         }
         .background(BoardPalette.background)
+        .disabled(editingTaskID != nil || showSettings)
 
         .overlay {
             if let task = store.board.task(withID: editingTaskID ?? "") {
-                Color.black.opacity(0.6).onTapGesture { editingTaskID = nil }
                 TaskDetailSheet(task: task, isPresented: Binding(get: { editingTaskID != nil }, set: { if !$0 { editingTaskID = nil } }))
-                    .frame(width: 500).padding(20)
             }
             if showSettings {
                 Color.black.opacity(0.6).onTapGesture { showSettings = false }
@@ -104,6 +103,10 @@ public struct BoardContentView: View {
             }
         }
         .onChange(of: editingTaskID) { _ in reportInteraction() }
+        .onExitCommand {
+            if showSettings { showSettings = false }
+            else if editingTaskID == nil { onCollapse() }
+        }
         .onChange(of: showSettings) { _ in reportInteraction() }
         .onChange(of: dragging) { _ in reportInteraction() }
         .onDisappear { onInteractionChanged(false) }

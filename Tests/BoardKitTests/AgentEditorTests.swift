@@ -10,7 +10,7 @@ final class AgentEditorTests: XCTestCase {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: folder) }
         let store = BoardStore(directory: folder); store.bootstrap()
-        let agents = AgentWorkspaceStore(directory: folder)
+        let agents = fixtureWorkspace(directory: folder)
         let view = AgentWorkspaceView(dragging: .constant(nil))
             .environmentObject(store).environmentObject(agents)
             .frame(width: 1300, height: 340).padding(16)
