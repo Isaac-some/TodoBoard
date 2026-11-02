@@ -14,7 +14,7 @@ def main():
         wrapper.write_text('#!/bin/sh\nexport TODOBOARD_DATA_DIR='+shlex.quote(str(root))+'\nexport PYTHONPATH='+shlex.quote(str(module))+'\nexec '+shlex.quote(sys.executable)+' -m todoboard.'+name+'\n');wrapper.chmod(0o700)
         hooks[event]=[{'matcher':'*','hooks':[{'type':'command','command':'sh "${PLUGIN_ROOT}/'+name+'.sh"','timeout':10}]}]
     atomic_json(plugin/'hooks/hooks.json',{'hooks':hooks})
-    atomic_json(plugin/'.codex-plugin/plugin.json',{'name':'todoboard','version':'0.2.0','description':'Scoped TodoBoard memory retrieval, session retention and task result integration.','author':{'name':'TodoBoard contributors'},'license':'MIT','repository':'https://github.com/Isaac-some/TodoBoard','hooks':'./hooks/hooks.json','mcpServers':'./.mcp.json','skills':'./skills/'})
+    atomic_json(plugin/'.codex-plugin/plugin.json',{'name':'todoboard','version':'0.2.1','description':'Scoped TodoBoard memory retrieval, session retention and task result integration.','author':{'name':'TodoBoard contributors'},'license':'MIT','repository':'https://github.com/Isaac-some/TodoBoard','hooks':'./hooks/hooks.json','mcpServers':'./.mcp.json','skills':'./skills/'})
     mcp={'mcpServers':{'todoboard':{'command':sys.executable,'args':['-m','todoboard.mcp'],'env':{'TODOBOARD_DATA_DIR':str(root),'PYTHONPATH':str(module)}}}}
     atomic_json(plugin/'.mcp.json',mcp);atomic_json(market/'mcp.json',mcp)
     atomic_json(market/'hooks.json',{'hooks':hooks})

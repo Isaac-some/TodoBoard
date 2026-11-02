@@ -55,6 +55,7 @@ extension AgentWorkspaceStore {
         guard !isSending, deliveryStorageAvailable, let agent = selected else { return }
         let agentID = agent.id
         let originalInstruction = draft.instruction
+        let originalTaskIDs = draft.taskIDs
         do {
             let workingDirectory = try authorizedWorkspaceURL()
             var scopeTransferred = false
@@ -75,7 +76,7 @@ extension AgentWorkspaceStore {
                 ? try AgentSetupInterview.instructions()
                 : try runtimeInstructions(agent, folder: folder)
             let request = CodexHandoffRequest(directory: workingDirectory, title: "\(agent.name) · TodoBoard",
-                instructions: instructions, prompt: text + "\n\n角色配置引用：\(folder.path)/AGENTS.md 和 \(folder.path)/agent.json。按需读取当前角色定义；agent.json 的当前定义优先，能力是否可用仍以执行器自身的配置与授权为准。", requestID: pending.id, threadID: pending.threadID, agentID: agentID, taskIDs: draft.taskIDs)
+                instructions: instructions, prompt: text + "\n\n角色配置引用：\(folder.path)/AGENTS.md 和 \(folder.path)/agent.json。按需读取当前角色定义；agent.json 的当前定义优先，能力是否可用仍以执行器自身的配置与授权为准。", requestID: pending.id, threadID: pending.threadID, agentID: agentID, taskIDs: originalTaskIDs)
             runningAgents.insert(agentID); deliveryStates[agentID] = .preparing
             scopeTransferred = true
             runningTasks[agentID] = Task { [weak self, transport] in
@@ -99,10 +100,14 @@ extension AgentWorkspaceStore {
                             if !self.deliveries.contains(where: { $0.requestID == receipt.requestID }) { self.deliveries.append(receipt) }
                             self.pendingDeliveries[agentID] = nil
                             _ = self.persistDeliveries()
-                            // Preserve edits made while sending, including when
-                            // the user has switched to another agent.
-                            if self.drafts[agentID]?.instruction == originalInstruction {
-                                self.drafts[agentID]?.instruction = ""; self.save()
+                            // Clear only the submitted selection; later additions remain queued.
+                            if var currentDraft = self.drafts[agentID] {
+                                let sentTaskIDs = Set(originalTaskIDs)
+                                currentDraft.taskIDs.removeAll { sentTaskIDs.contains($0) }
+                                for taskID in originalTaskIDs { currentDraft.ovHints.removeValue(forKey: taskID) }
+                                if currentDraft.instruction == originalInstruction { currentDraft.instruction = "" }
+                                self.drafts[agentID] = currentDraft
+                                self.save()
                             }
                             self.deliveryStates[agentID] = .sent(receipt)
                             do {
