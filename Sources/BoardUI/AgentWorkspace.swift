@@ -71,6 +71,11 @@ struct AgentWorkspaceView: View {
             Button("知道了") { workspace.error = nil }
         } message: { Text(workspace.error ?? "") }
         .onChange(of: workspace.selectedID) { _ in selectedTaskID = workspace.draft.taskIDs.first }
+        .onChange(of: workspace.draft.taskIDs) { taskIDs in
+            if let selectedTaskID, !taskIDs.contains(selectedTaskID) {
+                self.selectedTaskID = taskIDs.first
+            }
+        }
     }
 
     private var agentRail: some View {

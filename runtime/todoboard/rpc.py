@@ -6,7 +6,7 @@ class RPC:
     def __enter__(self):
         self.process=subprocess.Popen([self.executable,'app-server'],cwd=self.cwd,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=False)
         self.buffer=b'';self.selector=selectors.DefaultSelector();self.selector.register(self.process.stdout,selectors.EVENT_READ)
-        try:self.call('initialize',{'clientInfo':{'name':'todoboard','version':'0.2.0'},'capabilities':{'experimentalApi':True}})
+        try:self.call('initialize',{'clientInfo':{'name':'todoboard','version':'0.2.1'},'capabilities':{'experimentalApi':True}})
         except Exception:self.__exit__();raise
         self.send({'method':'initialized'});return self
     def send(self,obj):self.process.stdin.write((json.dumps(obj,ensure_ascii=False)+'\n').encode());self.process.stdin.flush()
