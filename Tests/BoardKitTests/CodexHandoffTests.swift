@@ -20,7 +20,7 @@ final class CodexHandoffTests: XCTestCase {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: folder) }
         var opens: [Bool] = []
-        let workspace = AgentWorkspaceStore(directory: folder, transport: MockHandoff(), openCodex: { _, navigate in opens.append(navigate) })
+        let workspace = fixtureWorkspace(directory: folder, transport: MockHandoff(), openCodex: { _, navigate in opens.append(navigate) })
         let id = workspace.selectedID
         workspace.updateDraft { $0.instruction = "请交给 Codex" }
         workspace.handoff(board: BoardData())
@@ -31,7 +31,7 @@ final class CodexHandoffTests: XCTestCase {
         XCTAssertEqual(workspace.deliveries.count, 1)
         XCTAssertTrue(workspace.pendingDeliveries.isEmpty)
         guard case .sent = workspace.deliveryState else { return XCTFail("Require a durable receipt") }
-        let restored = AgentWorkspaceStore(directory: folder)
+        let restored = fixtureWorkspace(directory: folder)
         XCTAssertEqual(restored.deliveries, workspace.deliveries)
         XCTAssertTrue(restored.pendingDeliveries.isEmpty)
         let role = try restored.prepareConversationWorkspace(try XCTUnwrap(restored.selected))
@@ -44,7 +44,7 @@ final class CodexHandoffTests: XCTestCase {
         for transport in [MockHandoff(fail: true), MockHandoff(omitReceipt: true)] {
             let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             defer { try? FileManager.default.removeItem(at: folder) }
-            let workspace = AgentWorkspaceStore(directory: folder, transport: transport, openCodex: { _, _ in XCTFail("Do not open on failed delivery") })
+            let workspace = fixtureWorkspace(directory: folder, transport: transport, openCodex: { _, _ in XCTFail("Do not open on failed delivery") })
             workspace.updateDraft { $0.instruction = "保留输入" }
             workspace.handoff(board: BoardData())
             await workspace.runningTasks[workspace.selectedID]?.value
@@ -52,7 +52,7 @@ final class CodexHandoffTests: XCTestCase {
             XCTAssertTrue(workspace.deliveries.isEmpty)
             let pending = try XCTUnwrap(workspace.pendingDeliveries[workspace.selectedID])
             guard case .failed = workspace.deliveryState else { return XCTFail("No fake success") }
-            let restored = AgentWorkspaceStore(directory: folder)
+            let restored = fixtureWorkspace(directory: folder)
             XCTAssertEqual(restored.pendingDeliveries[restored.selectedID]?.id, pending.id)
             XCTAssertEqual(restored.pendingDeliveries[restored.selectedID]?.threadID, pending.threadID)
             workspace.handoff(board: BoardData())
@@ -64,7 +64,7 @@ final class CodexHandoffTests: XCTestCase {
     @MainActor func testEditsAndAgentSwitchDuringHandoffArePreserved() async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let workspace = AgentWorkspaceStore(directory: folder, transport: MockHandoff(), openCodex: { _, _ in })
+        let workspace = fixtureWorkspace(directory: folder, transport: MockHandoff(), openCodex: { _, _ in })
         let first = workspace.selectedID
         workspace.updateDraft { $0.instruction = "已经发送的" }
         workspace.handoff(board: BoardData())
@@ -80,7 +80,7 @@ final class CodexHandoffTests: XCTestCase {
     @MainActor func testOpenFailureKeepsReceiptAndDoesNotAskToResend() async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let workspace = AgentWorkspaceStore(directory: folder, transport: MockHandoff(), openCodex: { _, _ in throw CodexChatFailure(message: "打不开") })
+        let workspace = fixtureWorkspace(directory: folder, transport: MockHandoff(), openCodex: { _, _ in throw CodexChatFailure(message: "打不开") })
         workspace.updateDraft { $0.instruction = "任务" }
         workspace.handoff(board: BoardData())
         await workspace.runningTasks[workspace.selectedID]?.value

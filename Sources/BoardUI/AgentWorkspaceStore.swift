@@ -77,18 +77,12 @@ public final class AgentWorkspaceStore: ObservableObject {
             do {
                 let data = try JSONDecoder().decode(AgentWorkspaceData.self, from: Data(contentsOf: file))
                 for profile in data.agents { try profile.validate() }
-                guard !data.agents.isEmpty, Set(data.agents.map(\.id)).count == data.agents.count else {
-                    throw AgentProtocolError.invalid("角色列表为空或 ID 重复")
+                guard Set(data.agents.map(\.id)).count == data.agents.count else {
+                    throw AgentProtocolError.invalid("角色 ID 重复")
                 }
                 agents = data.agents; selectedID = data.selectedID; drafts = data.drafts; workspacePaths = data.workspacePaths; workspaceBookmarks = data.workspaceBookmarks; setupAgentIDs = data.setupAgentIDs
-                if selected == nil { selectedID = agents[0].id }
+                if selected == nil { selectedID = agents.first?.id ?? "" }
             } catch { self.error = "智能体配置读取失败，原文件已保留：\(error.localizedDescription)"; canSave = false }
-        }
-        if agents.isEmpty {
-            agents = [("Yuki", "产品研究与需求梳理", "yuki"), ("Matt", "工程实现与验证", "matt"), ("Sofia", "知识整理与文档", "sofia"), ("Richard", "任务复盘与分析", "richard")].map {
-                AgentProfile(name: $0.0, background: $0.1, avatar: $0.2)
-            }
-            selectedID = agents[0].id
         }
         loadDeliveries()
     }
@@ -102,8 +96,12 @@ public final class AgentWorkspaceStore: ObservableObject {
     public func cancelPendingDeliveries() {
         for task in runningTasks.values { task.cancel() }
     }
-    func select(_ id: String) { selectedID = id; save() }
+    func select(_ id: String) {
+        guard agents.contains(where: { $0.id == id }) else { return }
+        selectedID = id; save()
+    }
     func updateDraft(_ change: (inout AgentDraft) -> Void) {
+        guard selected != nil else { return }
         var value = draft; change(&value); drafts[selectedID] = value; save()
     }
     func upsert(_ profile: AgentProfile) throws {
@@ -128,6 +126,7 @@ public final class AgentWorkspaceStore: ObservableObject {
         }, instruction: draft.instruction)
     }
     func chooseWorkspace() {
+        let agentID = selectedID
         let panel = NSOpenPanel()
         panel.title = "选择 Codex 工作区"
         panel.message = "选择 Agent 要使用的项目文件夹"
@@ -137,14 +136,21 @@ public final class AgentWorkspaceStore: ObservableObject {
         panel.canCreateDirectories = false
         panel.allowsMultipleSelection = false
         panel.directoryURL = URL(fileURLWithPath: selectedWorkspacePath, isDirectory: true)
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        do {
-            let bookmark = try url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
-            workspacePaths[selectedID] = url.path
-            workspaceNames[selectedID] = url.lastPathComponent
-            workspaceBookmarks[selectedID] = bookmark
-            save()
-        } catch { self.error = "无法保存工作区授权：\(error.localizedDescription)" }
+        let completion: (NSApplication.ModalResponse) -> Void = { [weak self, weak panel] response in
+            guard let self, response == .OK, let url = panel?.url else { return }
+            do {
+                let bookmark = try url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
+                self.workspacePaths[agentID] = url.path
+                self.workspaceNames[agentID] = url.lastPathComponent
+                self.workspaceBookmarks[agentID] = bookmark
+                self.save()
+            } catch { self.error = "无法保存工作区授权：\(error.localizedDescription)" }
+        }
+        if let window = NSApp.keyWindow {
+            panel.beginSheetModal(for: window, completionHandler: completion)
+        } else {
+            panel.begin(completionHandler: completion)
+        }
     }
     func authorizedWorkspaceURL() throws -> URL {
         if let bookmark = workspaceBookmarks[selectedID] {

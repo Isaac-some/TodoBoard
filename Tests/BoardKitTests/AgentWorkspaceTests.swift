@@ -6,12 +6,12 @@ final class AgentWorkspaceTests: XCTestCase {
     @MainActor func testDraftsSurviveReconstructionAndStayWithTheirAgent() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let workspace = AgentWorkspaceStore(directory: folder)
+        let workspace = fixtureWorkspace(directory: folder)
         let first = workspace.selectedID
         workspace.updateDraft { $0.taskIDs = ["t-alpha"]; $0.instruction = "保留这段说明"; $0.ovHints["t-alpha"] = "历史决策" }
         workspace.select(workspace.agents[1].id)
         XCTAssertTrue(workspace.draft.taskIDs.isEmpty)
-        let restored = AgentWorkspaceStore(directory: folder)
+        let restored = fixtureWorkspace(directory: folder)
         restored.select(first)
         XCTAssertEqual(restored.draft.taskIDs, ["t-alpha"])
         XCTAssertEqual(restored.draft.instruction, "保留这段说明")
@@ -20,7 +20,7 @@ final class AgentWorkspaceTests: XCTestCase {
     @MainActor func testVisibleMessageContainsFullTaskContext() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let workspace = AgentWorkspaceStore(directory: folder)
+        let workspace = fixtureWorkspace(directory: folder)
         let task = BoardTask(title: "测试任务", priority: .mid, status: .doing, notes: String(repeating: "长备注", count: 500))
         workspace.updateDraft { $0.taskIDs = [task.id, "deleted"]; $0.ovHints[task.id] = "OV 线索"; $0.instruction = "请给方案" }
         let text = workspace.composeMessage(board: BoardData(tasks: [task]))
@@ -35,7 +35,7 @@ final class AgentWorkspaceTests: XCTestCase {
     @MainActor func testImportRejectsUnknownVersionAndUpdatesSameIdentity() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let workspace = AgentWorkspaceStore(directory: folder)
+        let workspace = fixtureWorkspace(directory: folder)
         var profile = workspace.agents[0]
         profile.version = 2
         XCTAssertThrowsError(try workspace.upsert(profile))
@@ -50,7 +50,7 @@ final class AgentWorkspaceTests: XCTestCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let file = folder.appendingPathComponent("agent-workspace.json")
         try "broken".write(to: file, atomically: true, encoding: .utf8)
-        let workspace = AgentWorkspaceStore(directory: folder)
+        let workspace = fixtureWorkspace(directory: folder)
         XCTAssertNotNil(workspace.error)
         workspace.updateDraft { $0.instruction = "不可覆盖坏文件" }
         XCTAssertEqual(try String(contentsOf: file), "broken")

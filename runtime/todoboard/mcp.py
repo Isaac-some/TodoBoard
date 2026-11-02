@@ -18,7 +18,7 @@ def main():
         try:
             value=json.loads(line);method=value.get('method');params=value.get('params',{})
             if 'id' not in value:continue
-            if method=='initialize':result={'protocolVersion':params.get('protocolVersion','2024-11-05'),'capabilities':{'tools':{}},'serverInfo':{'name':'todoboard','version':'0.1.0'}}
+            if method=='initialize':result={'protocolVersion':params.get('protocolVersion','2024-11-05'),'capabilities':{'tools':{}},'serverInfo':{'name':'todoboard','version':'0.2.0'}}
             elif method=='tools/list':result={'tools':TOOLS}
             elif method=='ping':result={}
             elif method=='tools/call':

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "todoboard-runtime"
-version = "0.1.0"
+version = "0.2.0"
 description = "Open TodoBoard handoff runtime for personal agents and OpenViking"
 readme = "README.md"
 requires-python = ">=3.10"

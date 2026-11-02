@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var rolloverTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.mainMenu = BoardApplicationMenu.makeMainMenu()
         let dataPath = ProcessInfo.processInfo.environment["TODOBOARD_DATA_DIR"]
             ?? ProcessInfo.processInfo.environment["TODOBOARD_TEST_DATA"]
             ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/TodoBoard-OpenSource").path
